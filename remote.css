@@ -395,3 +395,31 @@ body[data-live="false"] .volume {
   color: var(--muted);
   font-size: 15px;
 }
+
+.volume {
+  width: 100%;
+  gap: 12px;
+  padding: 0 4px;
+}
+
+#vol {
+  min-width: 44px;
+  text-align: right;
+}
+
+.vol-icon {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  fill: var(--muted);
+}
+
+.vol-slider {
+  flex: 1;
+  min-width: 0;
+  height: 36px;
+  margin: 0;
+  background: transparent;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
