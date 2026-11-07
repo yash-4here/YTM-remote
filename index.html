@@ -56,9 +56,9 @@
         </div>
 
         <div class="volume">
-          <button class="btn small" data-cmd="volumeDown" aria-label="Volume down">&minus;</button>
+          <svg class="vol-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05A4.47 4.47 0 0 0 16.5 12z" /></svg>
+          <input id="volSlider" class="vol-slider" type="range" min="0" max="100" step="1" value="50" aria-label="Volume" />
           <span id="vol">&ndash;</span>
-          <button class="btn small" data-cmd="volumeUp" aria-label="Volume up">+</button>
         </div>
 
         <button class="queue-btn" id="queueOpen" type="button">Up next</button>
