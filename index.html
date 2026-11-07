@@ -61,10 +61,21 @@
           <button class="btn small" data-cmd="volumeUp" aria-label="Volume up">+</button>
         </div>
 
+        <button class="queue-btn" id="queueOpen" type="button">Up next</button>
+
         <p class="note">Unofficial. Not affiliated with YouTube or Google.</p>
         <button class="linkbtn" id="unpair" type="button">Unpair</button>
       </section>
     </main>
+
+    <section id="queuePanel" class="sheet" hidden aria-label="Up next">
+      <div class="sheet-head">
+        <h2>Up next</h2>
+        <button id="queueClose" class="sheet-close" type="button" aria-label="Close">&times;</button>
+      </div>
+      <ol id="queueList" class="queue-list"></ol>
+      <p id="queueEmpty" class="queue-empty">No queue yet. Play a song on your laptop.</p>
+    </section>
 
     <script src="carrier.js"></script>
     <script src="remote.js"></script>
