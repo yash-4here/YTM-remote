@@ -46,7 +46,6 @@ main {
   align-items: center;
 }
 
-/* ---------- Pairing screen ---------- */
 
 .pair-title {
   margin: 0 0 10px;
@@ -108,7 +107,6 @@ main {
   font-size: 14px;
 }
 
-/* ---------- Remote ---------- */
 
 .status {
   font-size: 12px;
@@ -177,7 +175,6 @@ h1 {
   color: var(--muted);
 }
 
-/* Controls fade out while the laptop isn't reachable */
 .controls,
 .volume {
   transition: opacity 0.2s ease;
@@ -239,7 +236,6 @@ body[data-live="false"] .volume {
   height: 52px;
 }
 
-/* Show the pause icon while playing, the play icon otherwise */
 .toggle .i-pause {
   display: none;
 }
