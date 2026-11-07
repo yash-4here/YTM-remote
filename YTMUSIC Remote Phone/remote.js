@@ -1,24 +1,12 @@
-// remote.js
-// Phone remote UI.
-//
-// The UI talks to a "transport": something with start(), send(command), stop().
-// There are two: a demo one with fake songs (open the page with ?demo), and the
-// real one, which connects through carrier.js to the extension on your laptop.
-
 (function () {
   "use strict";
 
   const $ = (id) => document.getElementById(id);
-
-  // Same fixed command set the extension accepts, and nothing else
   const COMMANDS = ["play", "pause", "toggle", "next", "previous", "volumeUp", "volumeDown"];
   const VOLUME_STEP = 10;
   const CODE_KEY = "ytmr.code";
-  const LIVE_WINDOW_MS = 40000; // laptop sends a heartbeat every 15s; miss two and it's gone
-
-  // ---------- Rendering (plain text only, never innerHTML) ----------
-
-  // State arrives over the network, so check every field before showing it
+  const LIVE_WINDOW_MS = 40000; 
+  
   function clean(state) {
     const s = state && typeof state === "object" ? state : {};
     return {
@@ -69,8 +57,6 @@
     el.dataset.kind = kind;
     document.body.dataset.live = live ? "true" : "false";
   }
-
-  // ---------- Demo transport (fake data, for trying the layout) ----------
 
   function createDemoTransport() {
     const songs = [
@@ -126,8 +112,6 @@
     };
   }
 
-  // ---------- Real transport (through the public brokers) ----------
-
   function createLinkTransport(code) {
     let link = null;
     let timer = null;
@@ -145,7 +129,6 @@
       else setStatus("Connected", "ok", true);
     }
 
-    // Phones put pages to sleep and switch networks; reconnect when we wake up
     function wake() {
       if (!link) return;
       link.nudge();
@@ -173,7 +156,6 @@
             info = s;
             refreshStatus();
           },
-          // Ask the laptop for its current state as soon as a connection opens
           onConnect: function () {
             link.send({ type: "sync" });
           },
@@ -182,7 +164,6 @@
         timer = setInterval(function () {
           ticks++;
           refreshStatus();
-          // While waiting, ask again every 5 seconds
           if (info.connected > 0 && !isLive() && ticks % 5 === 0) link.send({ type: "sync" });
         }, 1000);
 
@@ -203,8 +184,6 @@
     };
   }
 
-  // ---------- Screens and wiring ----------
-
   let transport = null;
 
   function loadCode() {
@@ -219,7 +198,6 @@
     try {
       localStorage.setItem(CODE_KEY, code);
     } catch (e) {
-      // private mode: it will just ask again next time
     }
   }
 
@@ -227,7 +205,6 @@
     try {
       localStorage.removeItem(CODE_KEY);
     } catch (e) {
-      // nothing to do
     }
   }
 
@@ -283,8 +260,6 @@
     });
   });
 
-  // ---------- Start ----------
-
   if (new URLSearchParams(location.search).has("demo")) {
     showRemote();
     transport = createDemoTransport();
@@ -295,7 +270,6 @@
     else showPairing();
   }
 
-  // Service worker only works over https (or localhost), not when opening the file directly
   if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) {
     navigator.serviceWorker.register("sw.js").catch(function () {});
   }
