@@ -6,7 +6,7 @@
   const VOLUME_STEP = 10;
   const CODE_KEY = "ytmr.code";
   const LIVE_WINDOW_MS = 40000; 
-  
+
   function clean(state) {
     const s = state && typeof state === "object" ? state : {};
     return {
@@ -58,6 +58,84 @@
     document.body.dataset.live = live ? "true" : "false";
   }
 
+  let queue = { from: 0, cur: -1, items: [] };
+
+  function cleanQueue(q) {
+    const s = q && typeof q === "object" ? q : {};
+    const items = (Array.isArray(s.items) ? s.items : []).slice(0, 200).map(function (it) {
+      const a = Array.isArray(it) ? it : [];
+      return {
+        title: typeof a[0] === "string" ? a[0].slice(0, 60) : "",
+        artist: typeof a[1] === "string" ? a[1].slice(0, 40) : "",
+        duration: typeof a[2] === "string" ? a[2].slice(0, 8) : "",
+      };
+    });
+    return {
+      from: Number.isInteger(s.from) && s.from >= 0 ? s.from : 0,
+      cur: Number.isInteger(s.cur) ? s.cur : -1,
+      items: items,
+    };
+  }
+
+  function renderQueue() {
+    const list = $("queueList");
+    const top = list.scrollTop;
+    list.textContent = "";
+    $("queueEmpty").hidden = queue.items.length > 0;
+
+    queue.items.forEach(function (it, i) {
+      const pos = queue.from + i;
+      const row = document.createElement("li");
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "queue-item" + (pos === queue.cur ? " current" : pos < queue.cur ? " past" : "");
+
+      const num = document.createElement("span");
+      num.className = "queue-num";
+      num.textContent = pos === queue.cur ? "▶" : String(pos + 1);
+
+      const text = document.createElement("span");
+      text.className = "queue-text";
+      const title = document.createElement("span");
+      title.className = "queue-title";
+      title.textContent = it.title || "Untitled";
+      const artist = document.createElement("span");
+      artist.className = "queue-artist";
+      artist.textContent = it.artist;
+      text.append(title, artist);
+
+      const dur = document.createElement("span");
+      dur.className = "queue-dur";
+      dur.textContent = it.duration;
+
+      btn.append(num, text, dur);
+      btn.addEventListener("click", function () {
+        if (navigator.vibrate) navigator.vibrate(10);
+        if (transport) transport.send("jump", { index: pos, title: it.title });
+      });
+      row.append(btn);
+      list.append(row);
+    });
+    list.scrollTop = top;
+  }
+
+  function setQueue(raw) {
+    queue = cleanQueue(raw);
+    if (!$("queuePanel").hidden) renderQueue();
+  }
+
+  function openQueue() {
+    $("queuePanel").hidden = false;
+    renderQueue();
+    const current = $("queueList").querySelector(".current");
+    if (current) current.scrollIntoView({ block: "center" });
+    if (transport && transport.sync) transport.sync(); 
+  }
+
+  function closeQueue() {
+    $("queuePanel").hidden = true;
+  }
+
   function createDemoTransport() {
     const songs = [
       { title: "Midnight Drive", artist: "The Neon Hours", hue: 265 },
@@ -73,6 +151,7 @@
     function show() {
       const s = songs[index];
       render({ tab: true, title: s.title, artist: s.artist, hue: s.hue, playing: playing, volume: volume });
+      setQueue({ from: 0, cur: index, items: songs.map(function (x) { return [x.title, x.artist, "3:30"]; }) });
     }
 
     return {
@@ -80,8 +159,14 @@
         setStatus("Demo mode", "demo", true);
         show();
       },
-      send: function (command) {
+      send: function (command, extra) {
         switch (command) {
+          case "jump":
+            if (extra && Number.isInteger(extra.index) && extra.index >= 0 && extra.index < songs.length) {
+              index = extra.index;
+              playing = true;
+            }
+            break;
           case "play":
             playing = true;
             break;
@@ -150,6 +235,8 @@
               lastLiveAt = Date.now();
               render(msg.state);
               refreshStatus();
+            } else if (msg.type === "queue" && msg.queue) {
+              setQueue(msg.queue);
             }
           },
           onStatus: function (s) {
@@ -170,9 +257,12 @@
         document.addEventListener("visibilitychange", onVisible);
         window.addEventListener("online", wake);
       },
-      send: function (command) {
+      send: function (command, extra) {
         if (!link || !isLive()) return;
-        link.send({ type: "cmd", cmd: command });
+        link.send(Object.assign({ type: "cmd", cmd: command }, extra || {}));
+      },
+      sync: function () {
+        if (link) link.send({ type: "sync" });
       },
       stop: function () {
         clearInterval(timer);
@@ -248,6 +338,9 @@
     if (transport) transport.stop();
     transport = null;
     forgetCode();
+    closeQueue();
+    queue = { from: 0, cur: -1, items: [] };
+    renderQueue();
     showPairing();
   });
 
@@ -258,6 +351,12 @@
       if (navigator.vibrate) navigator.vibrate(10);
       if (transport) transport.send(command);
     });
+  });
+
+  $("queueOpen").addEventListener("click", openQueue);
+  $("queueClose").addEventListener("click", closeQueue);
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") closeQueue();
   });
 
   if (new URLSearchParams(location.search).has("demo")) {
