@@ -46,7 +46,6 @@ main {
   align-items: center;
 }
 
-
 .pair-title {
   margin: 0 0 10px;
   font-size: 24px;
@@ -106,7 +105,6 @@ main {
   color: #ff8a8a;
   font-size: 14px;
 }
-
 
 .status {
   font-size: 12px;
@@ -261,4 +259,139 @@ body[data-live="false"] .volume {
   font-size: 12px;
   text-decoration: underline;
   cursor: pointer;
+}
+
+.queue-btn {
+  margin: -12px 0 24px;
+  padding: 10px 22px;
+  border: none;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.queue-btn:active {
+  background: var(--surface-hover);
+}
+
+.sheet {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  max-width: 420px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  padding: calc(12px + env(safe-area-inset-top)) 0 env(safe-area-inset-bottom);
+}
+
+.sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 20px 12px;
+}
+
+.sheet-head h2 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.sheet-close {
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.queue-list {
+  flex: 1;
+  margin: 0;
+  padding: 0 12px 16px;
+  list-style: none;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.queue-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 8px;
+  border: none;
+  border-radius: 10px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.queue-item:active {
+  background: var(--surface);
+}
+
+.queue-item.past {
+  opacity: 0.45;
+}
+
+.queue-item.current {
+  background: var(--surface);
+}
+
+.queue-item.current .queue-title {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.queue-num {
+  flex: none;
+  width: 26px;
+  text-align: right;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.queue-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.queue-title,
+.queue-artist {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.queue-title {
+  font-size: 15px;
+}
+
+.queue-artist {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.queue-dur {
+  flex: none;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.queue-empty {
+  margin: 40px 20px;
+  text-align: center;
+  color: var(--muted);
+  font-size: 15px;
 }
