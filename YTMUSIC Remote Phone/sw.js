@@ -1,7 +1,3 @@
-// sw.js
-// Keeps the app shell available offline. Network first, so updates show up
-// right away when you're online. Only touches files from this site.
-
 const CACHE = "music-remote-v2";
 const ASSETS = [
   "./",
