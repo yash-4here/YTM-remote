@@ -1,6 +1,6 @@
 (function (root) {
   "use strict";
- 
+
   const BROKERS = [
     "wss://broker.emqx.io:8084/mqtt",
     "wss://broker.hivemq.com:8884/mqtt",
@@ -10,12 +10,13 @@
   const CODE_LENGTH = 12;
 
   const PBKDF2_ITERATIONS = 100000;
-  const MAX_AGE_MS = 5 * 60 * 1000;
-  const MAX_PAYLOAD = 8192;
+  const MAX_AGE_MS = 5 * 60 * 1000; 
+  const MAX_PAYLOAD = 32768; 
   const KEEPALIVE_S = 60;
   const PING_MS = 15000; 
   const DEAD_MS = 40000; 
   const CONNECT_TIMEOUT_MS = 10000;
+
   const enc = new TextEncoder();
   const dec = new TextDecoder();
 
@@ -147,6 +148,7 @@
     const pubTopic = base.topic + "/" + sendDir;
     const subTopic = base.topic + "/" + recvDir;
     const urls = options.brokers && options.brokers.length ? options.brokers : BROKERS;
+
     const conns = urls.map(function (url) {
       return { url: url, ws: null, ready: false, buf: new Uint8Array(0), attempts: 0, retry: null, ping: null, guard: null, lastRx: 0 };
     });
