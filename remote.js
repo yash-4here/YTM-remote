@@ -39,7 +39,7 @@
     $("title").textContent = state.title || "Nothing playing";
     $("artist").textContent = state.artist;
     $("toggle").dataset.playing = state.playing ? "true" : "false";
-    $("vol").textContent = state.volume === null ? "–" : state.volume + "%";
+    if (state.volume !== null) showVolume(state.volume);
 
     if (/^https:\/\//.test(state.artwork)) {
       art.style.backgroundImage = 'url("' + state.artwork.replace(/"/g, "%22") + '")';
@@ -136,6 +136,35 @@
     $("queuePanel").hidden = true;
   }
 
+  let sliderBusyUntil = 0; 
+  let lastVolumeSent = 0;
+  let volumeTimer = null;
+
+  function showVolume(level) {
+    if (Date.now() < sliderBusyUntil) return;
+    $("volSlider").value = String(level);
+    $("vol").textContent = level + "%";
+  }
+
+  function sendVolume(level) {
+    lastVolumeSent = Date.now();
+    if (transport) transport.send("volume", { level: level });
+  }
+
+  $("volSlider").addEventListener("input", function () {
+    const level = Math.round(Number($("volSlider").value));
+    $("vol").textContent = level + "%";
+    sliderBusyUntil = Date.now() + 1500;
+    clearTimeout(volumeTimer);
+    if (Date.now() - lastVolumeSent >= 200) {
+      sendVolume(level);
+    } else {
+      volumeTimer = setTimeout(function () {
+        sendVolume(level);
+      }, 200);
+    }
+  });
+  
   function createDemoTransport() {
     const songs = [
       { title: "Midnight Drive", artist: "The Neon Hours", hue: 265 },
