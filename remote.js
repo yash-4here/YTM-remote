@@ -17,6 +17,8 @@
       artwork: typeof s.artwork === "string" ? s.artwork.slice(0, 500) : "",
       playing: s.playing === true,
       volume: typeof s.volume === "number" && isFinite(s.volume) ? Math.round(s.volume) : null,
+      pos: typeof s.pos === "number" && isFinite(s.pos) && s.pos >= 0 ? Math.round(s.pos) : 0,
+      dur: typeof s.dur === "number" && isFinite(s.dur) && s.dur >= 0 ? Math.round(s.dur) : 0,
       hue: typeof s.hue === "number" ? s.hue : null,
     };
   }
@@ -26,6 +28,7 @@
     const art = $("art");
 
     if (!state.tab) {
+      showProgress(0, 0, false);
       $("title").textContent = state.refresh
         ? "Refresh YouTube Music on your laptop"
         : "Open YouTube Music on your laptop";
@@ -40,6 +43,7 @@
     $("artist").textContent = state.artist;
     $("toggle").dataset.playing = state.playing ? "true" : "false";
     if (state.volume !== null) showVolume(state.volume);
+    showProgress(state.pos, state.dur, state.playing);
 
     if (/^https:\/\//.test(state.artwork)) {
       art.style.backgroundImage = 'url("' + state.artwork.replace(/"/g, "%22") + '")';
@@ -163,6 +167,51 @@
         sendVolume(level);
       }, 200);
     }
+  });
+
+  let progress = { pos: 0, dur: 0, playing: false, at: 0 };
+  let progressBusyUntil = 0; 
+
+  function formatTime(total) {
+    const s = Math.max(0, Math.floor(total));
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const sec = String(s % 60).padStart(2, "0");
+    return h > 0 ? h + ":" + String(m).padStart(2, "0") + ":" + sec : m + ":" + sec;
+  }
+
+  function drawProgress() {
+    if (Date.now() < progressBusyUntil) return;
+    const dur = progress.dur;
+    let pos = progress.pos;
+    if (progress.playing) pos += (Date.now() - progress.at) / 1000;
+    pos = Math.min(pos, dur);
+    const bar = $("progSlider");
+    bar.disabled = dur <= 0;
+    bar.max = String(dur);
+    bar.value = String(Math.floor(pos));
+    $("posNow").textContent = formatTime(pos);
+    $("posTotal").textContent = formatTime(dur);
+  }
+
+  function showProgress(pos, dur, playing) {
+    progress = { pos: pos || 0, dur: dur || 0, playing: !!playing, at: Date.now() };
+    drawProgress();
+  }
+
+  setInterval(drawProgress, 500);
+
+  $("progSlider").addEventListener("input", function () {
+    progressBusyUntil = Date.now() + 10000;
+    $("posNow").textContent = formatTime(Number($("progSlider").value));
+  });
+
+  $("progSlider").addEventListener("change", function () {
+    const pos = Math.round(Number($("progSlider").value));
+    progress.pos = pos;
+    progress.at = Date.now();
+    progressBusyUntil = Date.now() + 1500; 
+    if (transport) transport.send("seek", { pos: pos });
   });
   
   function createDemoTransport() {
