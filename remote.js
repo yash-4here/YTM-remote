@@ -437,14 +437,31 @@
     if (event.key === "Escape") closeQueue();
   });
 
+  function codeFromLink() {
+    let code = null;
+    try {
+      code = Carrier.normalizeCode(decodeURIComponent(location.hash.slice(1)));
+    } catch (e) {
+      code = null;
+    }
+    if (location.hash) history.replaceState(null, "", location.pathname + location.search); 
+    return code;
+  }
+  
   if (new URLSearchParams(location.search).has("demo")) {
     showRemote();
     transport = createDemoTransport();
     transport.start();
   } else {
-    const saved = loadCode();
-    if (saved) startPaired(saved);
-    else showPairing();
+    const scanned = codeFromLink();
+    if (scanned) {
+      saveCode(scanned);
+      startPaired(scanned);
+    } else {
+      const saved = loadCode();
+      if (saved) startPaired(saved);
+      else showPairing();
+    }
   }
 
   if ("serviceWorker" in navigator && /^https?:$/.test(location.protocol)) {
