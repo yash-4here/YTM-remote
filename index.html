@@ -39,6 +39,12 @@
 
         <h1 id="title">Nothing playing</h1>
         <p id="artist"></p>
+        
+        <div class="progress">
+          <span id="posNow" class="time time-now">0:00</span>
+          <input id="progSlider" class="prog-slider" type="range" min="0" max="0" step="1" value="0" disabled aria-label="Song position" />
+          <span id="posTotal" class="time">0:00</span>
+        </div>
 
         <div class="controls">
           <button class="btn" data-cmd="previous" aria-label="Previous">
