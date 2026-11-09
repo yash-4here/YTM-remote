@@ -140,6 +140,140 @@
     $("queuePanel").hidden = true;
   }
 
+  let results = { q: "", err: "", items: [] };
+  let searching = false;
+  let searchTimer = null; 
+
+  const SEARCH_MESSAGES = {
+    notab: "Open YouTube Music on your laptop first.",
+    refresh: "Refresh YouTube Music on your laptop, then try again.",
+    nosearch: "Couldn't use YouTube Music's search box on the laptop.",
+    empty: "No results for that search.",
+    timeout: "The laptop didn't get results in time. Try again.",
+    busy: "Still searching. Try again in a moment.",
+    slow: "Too many searches in a row. Wait a few seconds and try again.",
+    changed: "The results changed on the laptop. Search again.",
+  };
+
+  function cleanResults(raw) {
+    const s = raw && typeof raw === "object" ? raw : {};
+    const items = (Array.isArray(s.items) ? s.items : []).slice(0, 20).map(function (it) {
+      const a = Array.isArray(it) ? it : [];
+      return {
+        title: typeof a[0] === "string" ? a[0].slice(0, 60) : "",
+        details: typeof a[1] === "string" ? a[1].slice(0, 80) : "",
+      };
+    });
+    return {
+      q: typeof s.q === "string" ? s.q.slice(0, 80) : "",
+      err: typeof s.err === "string" ? s.err.slice(0, 12) : "",
+      items: items.filter(function (it) {
+        return it.title;
+      }),
+    };
+  }
+
+  function renderResults() {
+    const list = $("searchList");
+    list.textContent = "";
+
+    let message = "";
+    if (searching) message = "Searching…";
+    else if (results.err) message = SEARCH_MESSAGES[results.err] || "Something went wrong. Try again.";
+    else if (!results.q) message = "Type a song or artist, then press Search.";
+    else if (results.items.length === 0) message = SEARCH_MESSAGES.empty;
+    $("searchMsg").textContent = message;
+    $("searchMsg").hidden = message === "";
+    if (searching || results.err) return;
+
+    results.items.forEach(function (it, i) {
+      const row = document.createElement("li");
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "queue-item";
+
+      const icon = document.createElement("span");
+      icon.className = "queue-num";
+      icon.textContent = "▶";
+
+      const text = document.createElement("span");
+      text.className = "queue-text";
+      const title = document.createElement("span");
+      title.className = "queue-title";
+      title.textContent = it.title;
+      const details = document.createElement("span");
+      details.className = "queue-artist";
+      details.textContent = it.details;
+      text.append(title, details);
+
+      btn.append(icon, text);
+      btn.addEventListener("click", function () {
+        if (navigator.vibrate) navigator.vibrate(10);
+        if (transport) transport.send("playResult", { index: i, title: it.title });
+        closeSearch();
+      });
+      row.append(btn);
+      list.append(row);
+    });
+  }
+
+  function setResults(raw) {
+    clearTimeout(searchTimer);
+    searching = false;
+    results = cleanResults(raw);
+    renderResults();
+    if (results.err === "changed") $("searchPanel").hidden = false;
+  }
+
+  function openSearch() {
+    $("searchPanel").hidden = false;
+    renderResults();
+    $("searchInput").focus();
+  }
+
+  function closeSearch() {
+    $("searchPanel").hidden = true;
+    $("searchInput").blur();
+  }
+
+  $("searchOpen").addEventListener("click", openSearch);
+  $("searchClose").addEventListener("click", closeSearch);
+
+  $("searchForm").addEventListener("submit", function (event) {
+    event.preventDefault();
+    const q = $("searchInput").value.trim().slice(0, 80);
+    if (!q) return;
+    if (!transport || !transport.isLive()) {
+      results = { q: q, err: "notab", items: [] };
+      renderResults();
+      return;
+    }
+    $("searchInput").blur(); 
+    searching = true;
+    renderResults();
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(function () {
+      if (!searching) return;
+      searching = false;
+      results = { q: q, err: "timeout", items: [] };
+      renderResults();
+    }, 15000);
+    transport.send("search", { q: q });
+  });
+
+  document.addEventListener("keydown", function (event) {
+    if (event.key === "Escape") closeSearch();
+  });
+
+  $("unpair").addEventListener("click", function () {
+    clearTimeout(searchTimer);
+    searching = false;
+    results = { q: "", err: "", items: [] };
+    $("searchInput").value = "";
+    closeSearch();
+    renderResults();
+  });
+  
   let sliderBusyUntil = 0; 
   let lastVolumeSent = 0;
   let volumeTimer = null;
@@ -239,6 +373,23 @@
       },
       send: function (command, extra) {
         switch (command) {
+          case "search":
+            if (extra && typeof extra.q === "string") {
+              setResults({
+                q: extra.q,
+                err: "",
+                items: songs.map(function (x) {
+                  return [x.title, "Song • " + x.artist + " • 3:30"];
+                }),
+              });
+            }
+            return;
+          case "playResult":
+            if (extra && Number.isInteger(extra.index) && extra.index >= 0 && extra.index < songs.length) {
+              index = extra.index;
+              playing = true;
+            }
+            break;
           case "jump":
             if (extra && Number.isInteger(extra.index) && extra.index >= 0 && extra.index < songs.length) {
               index = extra.index;
@@ -270,6 +421,9 @@
             break;
         }
         show();
+      },
+      isLive: function () {
+        return true;
       },
       stop: function () {},
     };
@@ -315,6 +469,8 @@
               refreshStatus();
             } else if (msg.type === "queue" && msg.queue) {
               setQueue(msg.queue);
+            } else if (msg.type === "results") {
+              setResults(msg);
             }
           },
           onStatus: function (s) {
@@ -339,6 +495,7 @@
         if (!link || !isLive()) return;
         link.send(Object.assign({ type: "cmd", cmd: command }, extra || {}));
       },
+      isLive: isLive,
       sync: function () {
         if (link) link.send({ type: "sync" });
       },
