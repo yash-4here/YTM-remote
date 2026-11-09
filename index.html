@@ -67,7 +67,10 @@
           <span id="vol">&ndash;</span>
         </div>
 
-        <button class="queue-btn" id="queueOpen" type="button">Up next</button>
+        <div class="pills">
+          <button class="queue-btn" id="searchOpen" type="button">Search</button>
+          <button class="queue-btn" id="queueOpen" type="button">Up next</button>
+        </div>
 
         <p class="note">Unofficial. Not affiliated with YouTube or Google.</p>
         <button class="linkbtn" id="unpair" type="button">Unpair</button>
@@ -83,6 +86,20 @@
       <p id="queueEmpty" class="queue-empty">No queue yet. Play a song on your laptop.</p>
     </section>
 
+    <section id="searchPanel" class="sheet" hidden aria-label="Search">
+      <div class="sheet-head">
+        <h2>Search</h2>
+        <button id="searchClose" class="sheet-close" type="button" aria-label="Close">&times;</button>
+      </div>
+      <form id="searchForm" class="search-form" autocomplete="off">
+        <input id="searchInput" class="search-input" type="search" enterkeyhint="search" maxlength="80"
+               placeholder="Song or artist" autocomplete="off" autocorrect="off" spellcheck="false" aria-label="Search" />
+        <button class="search-go" type="submit">Search</button>
+      </form>
+      <ol id="searchList" class="queue-list"></ol>
+      <p id="searchMsg" class="queue-empty"></p>
+    </section>
+    
     <script src="carrier.js"></script>
     <script src="remote.js"></script>
   </body>
