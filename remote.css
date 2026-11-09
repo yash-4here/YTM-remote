@@ -460,3 +460,51 @@ body[data-live="false"] .progress {
   accent-color: var(--accent);
   cursor: pointer;
 }
+
+.pills {
+  display: flex;
+  gap: 10px;
+  margin: -12px 0 24px;
+}
+
+.pills .queue-btn {
+  margin: 0;
+}
+
+body[data-live="false"] .pills {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.search-form {
+  display: flex;
+  gap: 8px;
+  padding: 0 20px 12px;
+}
+
+.search-input {
+  flex: 1;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid #3a3a3a;
+  border-radius: 12px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 16px; 
+}
+
+.search-input:focus {
+  outline: 2px solid var(--accent);
+  border-color: transparent;
+}
+
+.search-go {
+  padding: 0 16px;
+  border: none;
+  border-radius: 12px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
