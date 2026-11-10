@@ -25,7 +25,7 @@ If the scan doesn't work, open the phone page above and type the 12-character co
 - The extension on your laptop and the phone page both connect to public MQTT message brokers over secure WebSockets.
 - The pairing code is generated on your laptop. From it, both sides derive a private topic name and an encryption key (PBKDF2 → AES-GCM).
 - Every message is encrypted, so the brokers only see scrambled data. Messages are also timestamped and de-duplicated to stop replays.
-- Only a fixed list of commands is accepted (play, pause, next, previous, volume, seek, jump to a queue song). Each is validated and rate-limited.
+- Only a fixed list of commands is accepted (play, pause, next, previous, volume, seek, search, jump to a queue song). Each is validated and rate-limited.
 
 ## Privacy
 
