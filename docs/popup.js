@@ -1,15 +1,12 @@
-// popup.js
-// Pairing code and status at the top, plus a small local player for testing.
-
 const $ = (id) => document.getElementById(id);
 
-// ---------- QR code generator (byte mode, error correction M, versions 1-6) ----------
+//QR code generator
 const QR = (function () {
-  // [data codewords, error-correction codewords per block, number of blocks]
+
   const SPEC = [null, [16, 10, 1], [28, 16, 1], [44, 26, 1], [64, 18, 2], [86, 24, 2], [108, 16, 4]];
   const ALIGN = [null, [], [6, 18], [6, 22], [6, 26], [6, 30], [6, 34]];
 
-  // Arithmetic for the error-correction codes
+
   const EXP = [];
   const LOG = [];
   for (let i = 0, x = 1; i < 255; i++) {
@@ -40,17 +37,17 @@ const QR = (function () {
     return rem;
   }
 
-  // The text as bytes, plus error-correction bytes, in the order they are placed
+
   function codewords(bytes, version) {
     const [cap, ec, blocks] = SPEC[version];
     const bits = [];
     const put = (value, length) => {
       for (let i = length - 1; i >= 0; i--) bits.push((value >>> i) & 1);
     };
-    put(4, 4); // byte mode
+    put(4, 4); 
     put(bytes.length, 8);
     bytes.forEach((b) => put(b, 8));
-    put(0, Math.min(4, cap * 8 - bits.length)); // terminator
+    put(0, Math.min(4, cap * 8 - bits.length)); 
     while (bits.length % 8) bits.push(0);
     const data = [];
     for (let i = 0; i < bits.length; i += 8) data.push(parseInt(bits.slice(i, i + 8).join(""), 2));
@@ -71,7 +68,7 @@ const QR = (function () {
   }
 
   function formatBits(mask) {
-    let rem = mask; // error-correction level M is 00, so the 5 bits are just the mask
+    let rem = mask; 
     for (let i = 0; i < 10; i++) rem = (rem << 1) ^ ((rem >>> 9) * 0x537);
     return ((mask << 10) | rem) ^ 0x5412;
   }
@@ -90,11 +87,11 @@ const QR = (function () {
     for (let i = 9; i < 15; i++) put(8, 14 - i, i);
     for (let i = 0; i < 8; i++) put(8, n - 1 - i, i);
     for (let i = 8; i < 15; i++) put(n - 15 + i, 8, i);
-    m[n - 8][8] = true; // the one module that is always dark
+    m[n - 8][8] = true; 
     fn[n - 8][8] = true;
   }
 
-  // Fixed patterns plus the data, before any mask is applied
+  
   function baseMatrix(version, stream) {
     const n = 17 + 4 * version;
     const m = Array.from({ length: n }, () => new Array(n).fill(false));
@@ -129,7 +126,7 @@ const QR = (function () {
         }
       }
     }
-    drawFormat(m, fn, 0); // reserves the format-information area
+    drawFormat(m, fn, 0); 
 
     let i = 0;
     const total = stream.length * 8;
@@ -160,7 +157,7 @@ const QR = (function () {
     (r, c) => (((r + c) % 2) + ((r * c) % 3)) % 2 === 0,
   ];
 
-  // The mask that leaves the least confusing pattern wins
+
   function penalty(m) {
     const n = m.length;
     let p = 0;
@@ -190,7 +187,7 @@ const QR = (function () {
     return p;
   }
 
-  // Returns rows of true/false (true = dark), or null if the text is too long (over 106 bytes)
+
   function encode(text) {
     const bytes = new TextEncoder().encode(text);
     let version = 1;
@@ -219,12 +216,11 @@ const QR = (function () {
   return { encode: encode };
 })();
 
-// ---------- Pairing QR code ----------
+//Pairing QR code
 
-// The phone page you host. Everyone uses it unless they choose their own address.
 const DEFAULT_PHONE_URL = "https://yash-4here.github.io/YTM-remote-phone/";
 
-let phoneUrl = DEFAULT_PHONE_URL; // can be changed with the Address button
+let phoneUrl = DEFAULT_PHONE_URL;
 let currentCode = "";
 let qrKey = "";
 
@@ -251,7 +247,7 @@ function drawQr(code) {
   if (code) currentCode = code;
   if (!phoneUrl || !currentCode) return;
   const link = phoneUrl + "#" + currentCode.replace(/-/g, "");
-  if (link === qrKey) return; // nothing changed
+  if (link === qrKey) return; 
   qrKey = link;
 
   const rows = QR.encode(link);
@@ -263,7 +259,7 @@ function drawQr(code) {
   const canvas = $("qr");
   const g = canvas.getContext("2d");
   const n = rows.length;
-  const scale = Math.floor(canvas.width / (n + 8)); // 4 modules of white border on each side
+  const scale = Math.floor(canvas.width / (n + 8)); 
   const offset = Math.floor((canvas.width - scale * n) / 2);
   g.fillStyle = "#fff";
   g.fillRect(0, 0, canvas.width, canvas.height);
@@ -278,7 +274,7 @@ function drawQr(code) {
 $("addrForm").addEventListener("submit", async (event) => {
   event.preventDefault();
   const typed = $("addr").value.trim();
-  const url = typed === "" ? DEFAULT_PHONE_URL : cleanAddress(typed); // empty = back to the default
+  const url = typed === "" ? DEFAULT_PHONE_URL : cleanAddress(typed); 
   if (!url) {
     $("addrError").textContent = "Enter the full address, starting with https://";
     return;
@@ -290,7 +286,6 @@ $("addrForm").addEventListener("submit", async (event) => {
     if (typed === "") await chrome.storage.local.remove("phoneUrl");
     else await chrome.storage.local.set({ phoneUrl: url });
   } catch (err) {
-    // not saved; the default will be used next time
   }
   renderAddressUi();
   drawQr();
@@ -308,13 +303,12 @@ $("changeAddr").addEventListener("click", () => {
     const saved = await chrome.storage.local.get("phoneUrl");
     phoneUrl = cleanAddress(saved.phoneUrl || "") || DEFAULT_PHONE_URL;
   } catch (err) {
-    // keep the default
   }
   renderAddressUi();
   drawQr();
 })();
 
-// ---------- Phone pairing ----------
+//Phone pairing
 
 function showPairing(res) {
   if (!res) return;
@@ -330,7 +324,6 @@ async function refreshPairing() {
   try {
     showPairing(await chrome.runtime.sendMessage({ type: "GET_PAIRING" }));
   } catch (err) {
-    // background worker still waking up; the next tick will catch it
   }
 }
 
@@ -342,7 +335,6 @@ $("copy").addEventListener("click", async () => {
       $("copy").textContent = "Copy";
     }, 1500);
   } catch (err) {
-    // clipboard blocked; the code is on screen to type instead
   }
 });
 
@@ -350,11 +342,9 @@ $("newcode").addEventListener("click", async () => {
   try {
     showPairing(await chrome.runtime.sendMessage({ type: "NEW_CODE" }));
   } catch (err) {
-    // ignore; try again
   }
 });
 
-// ---------- Local player (talks to the YT Music tab directly) ----------
 
 async function findTab() {
   const tabs = await chrome.tabs.query({ url: "https://music.youtube.com/*" });
@@ -372,7 +362,7 @@ function render(state) {
   $("msg").hidden = true;
   $("player").hidden = false;
 
-  // textContent only, never innerHTML
+
   $("title").textContent = state.title || "Nothing playing";
   $("artist").textContent = state.artist || "";
   $("toggle").textContent = state.playing ? "⏸" : "▶";
