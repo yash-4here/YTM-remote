@@ -1,0 +1,147 @@
+body {
+  width: 260px;
+  margin: 0;
+  padding: 14px;
+  background: #181818;
+  color: #f1f1f1;
+  font-family: system-ui, sans-serif;
+  text-align: center;
+}
+
+#pairing {
+  margin-bottom: 14px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #2a2a2a;
+}
+
+.label {
+  font-size: 11px;
+  color: #aaa;
+  margin-bottom: 6px;
+}
+
+.code {
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  user-select: all;
+}
+
+.linkstatus {
+  font-size: 12px;
+  color: #aaa;
+  margin: 6px 0 8px;
+}
+
+.pairrow {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+}
+
+button.textbtn {
+  width: auto;
+  height: auto;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+#msg {
+  padding: 20px 4px;
+  color: #aaa;
+  font-size: 14px;
+}
+
+#art {
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}
+
+#title {
+  font-size: 15px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#artist {
+  font-size: 13px;
+  color: #aaa;
+  margin: 2px 0 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 10px;
+}
+
+button {
+  background: #2a2a2a;
+  color: #f1f1f1;
+  border: none;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  font-size: 16px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #3a3a3a;
+}
+
+#vol {
+  min-width: 48px;
+  font-size: 13px;
+  color: #aaa;
+}
+
+
+[hidden] {
+  display: none !important;
+}
+
+.pairrow {
+  flex-wrap: wrap;
+}
+
+#qr {
+  display: block;
+  margin: 0 auto 10px;
+  border-radius: 8px;
+  background: #fff;
+}
+
+#addrForm {
+  margin-bottom: 12px;
+}
+
+#addr {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 6px 0 8px;
+  padding: 8px;
+  border: 1px solid #3a3a3a;
+  border-radius: 6px;
+  background: #222;
+  color: #f1f1f1;
+  font-size: 12px;
+}
+
+.error {
+  margin-top: 6px;
+  font-size: 11px;
+  color: #ff8a8a;
+}

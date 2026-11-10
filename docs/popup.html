@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <section id="pairing">
+      <form id="addrForm" novalidate hidden>
+        <div class="label">Phone page address (leave empty to use the default)</div>
+        <input id="addr" type="url" placeholder="https://name.github.io/music-remote/" />
+        <button class="textbtn" type="submit">Save</button>
+        <div id="addrError" class="error"></div>
+      </form>
+
+      <div id="qrLabel" class="label" hidden>Scan with your phone camera</div>
+      <canvas id="qr" width="200" height="200" hidden></canvas>
+      <div id="qrNote" class="error"></div>
+
+      <div class="label">Or type this code on the phone</div>
+      <div id="code" class="code">&hellip;</div>
+      <div id="link" class="linkstatus">Starting&hellip;</div>
+      <div class="pairrow">
+        <button class="textbtn" id="copy">Copy</button>
+        <button class="textbtn" id="newcode">New code</button>
+        <button class="textbtn" id="changeAddr" hidden>Address</button>
+      </div>
+    </section>
+
+    <div id="msg" hidden></div>
+
+    <div id="player" hidden>
+      <img id="art" alt="" hidden />
+      <div id="title"></div>
+      <div id="artist"></div>
+
+      <div class="row">
+        <button data-cmd="previous" title="Previous">&#9198;</button>
+        <button data-cmd="toggle" id="toggle" title="Play / Pause">&#9654;</button>
+        <button data-cmd="next" title="Next">&#9197;</button>
+      </div>
+
+      <div class="row">
+        <button data-cmd="volumeDown" title="Volume down">&minus;</button>
+        <span id="vol"></span>
+        <button data-cmd="volumeUp" title="Volume up">+</button>
+      </div>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
