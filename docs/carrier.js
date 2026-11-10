@@ -1,56 +1,34 @@
-// carrier.js
-// Carries small messages between your phone and your laptop through free
-// public MQTT brokers (MQTT over secure WebSockets).
-//
-// The same file is used in BOTH places:
-//   - the phone page loads it with <script src="carrier.js">
-//   - the extension's background.js loads it with importScripts("carrier.js")
-// so keep one copy in each folder and keep them identical.
-//
-// Public brokers are open to everyone, so nothing is sent in plain text:
-//   - The pairing code is stretched (PBKDF2) into a secret topic name and an
-//     AES-GCM key. Without the code nobody can find your topic, read it, or
-//     make a message that passes the check.
-//   - Every message carries a random id and a timestamp. Duplicates (the same
-//     message arriving through several brokers) and old replays are dropped.
-//   - We connect to several brokers at once, so one being down doesn't matter.
-
 (function (root) {
   "use strict";
 
-  // Both accept secure WebSockets. (test.mosquitto.org:8081 was dropped: it
-  // refused connections from Chrome and just filled the console with errors.)
   const BROKERS = [
     "wss://broker.emqx.io:8084/mqtt",
     "wss://broker.hivemq.com:8884/mqtt",
   ];
 
-  // No 0, 1, I or O, so a code read off a screen can't be mistyped
+
   const ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   const CODE_LENGTH = 12;
 
   const PBKDF2_ITERATIONS = 100000;
-  const MAX_AGE_MS = 5 * 60 * 1000; // ignore messages older (or newer) than this
-  const MAX_PAYLOAD = 32768; // a queue of ~100 songs needs more than the old 8 KB
+  const MAX_AGE_MS = 5 * 60 * 1000; 
+  const MAX_PAYLOAD = 32768; 
   const KEEPALIVE_S = 60;
-  const PING_MS = 15000; // also keeps Chrome's extension worker awake
-  const DEAD_MS = 40000; // nothing heard from a broker for this long: reconnect
+  const PING_MS = 15000; 
+  const DEAD_MS = 40000; 
   const CONNECT_TIMEOUT_MS = 10000;
 
   const enc = new TextEncoder();
   const dec = new TextDecoder();
 
-  // ---------- Pairing codes ----------
-
+  //Pairing codes
   function generateCode() {
     const bytes = root.crypto.getRandomValues(new Uint8Array(CODE_LENGTH));
     let code = "";
-    // 256 is a multiple of 32, so "& 31" picks every letter equally often
     for (let i = 0; i < CODE_LENGTH; i++) code += ALPHABET[bytes[i] & 31];
     return code;
   }
 
-  // Accepts "abcd-efgh-jkmn" or "ABCDEFGHJKMN"; returns the 12 characters or null
   function normalizeCode(input) {
     if (typeof input !== "string") return null;
     const code = input.toUpperCase().replace(/[^A-Z0-9]/g, "");
@@ -65,7 +43,6 @@
     return typeof code === "string" && code ? code.match(/.{1,4}/g).join("-") : "";
   }
 
-  // ---------- Keys and sealed messages ----------
 
   function hex(bytes) {
     let out = "";
@@ -84,7 +61,7 @@
     return out;
   }
 
-  // The same code always gives the same topic and key, on both devices
+  
   async function topicBase(code) {
     const clean = normalizeCode(code);
     if (!clean) throw new Error("bad pairing code");
@@ -104,8 +81,7 @@
     return { topic: "ytmr/" + hex(bytes.slice(0, 16)), key: key };
   }
 
-  // direction ("p" phone to laptop, "l" laptop to phone) is signed into the
-  // message, so a message can't be bounced back the other way
+
   async function seal(base, direction, msg) {
     const iv = root.crypto.getRandomValues(new Uint8Array(12));
     const plain = enc.encode(JSON.stringify({ i: randomId(), t: Date.now(), m: msg }));
@@ -130,7 +106,6 @@
     return JSON.parse(dec.decode(plain));
   }
 
-  // ---------- Minimal MQTT 3.1.1 (just what we need) ----------
 
   const PINGREQ = Uint8Array.of(0xc0, 0x00);
   const DISCONNECT = Uint8Array.of(0xe0, 0x00);
@@ -171,16 +146,7 @@
     return mqttPacket(0x30, concat(mqttString(topic), payload));
   }
 
-  // ---------- The link ----------
-
-  // options:
-  //   role       "phone" or "laptop"
-  //   base       what topicBase(code) returned
-  //   onMessage  (msg) called once per genuine message from the other side
-  //   onStatus   ({connected, total}) called when the number of live brokers changes
-  //   onConnect  () called when we go from no brokers to at least one
-  //   brokers    (optional) override the broker list
-  // returns { send(msg), nudge(), close(), status() }
+  //The link
   function createLink(options) {
     const role = options.role === "laptop" ? "laptop" : "phone";
     const base = options.base;
@@ -194,7 +160,7 @@
       return { url: url, ws: null, ready: false, buf: new Uint8Array(0), attempts: 0, retry: null, ping: null, guard: null, lastRx: 0 };
     });
 
-    const seen = new Map(); // message id -> time, so duplicates are ignored
+    const seen = new Map(); 
     let closed = false;
     let lastCount = 0;
 
@@ -249,7 +215,6 @@
         try {
           ws.close();
         } catch (e) {
-          // already closed
         }
       }
       emit();
@@ -303,7 +268,7 @@
       };
     }
 
-    // One WebSocket message can hold several MQTT packets, or half of one
+
     function feed(c, chunk) {
       c.buf = concat(c.buf, chunk);
       while (c.ws && c.buf.length >= 2) {
@@ -312,14 +277,14 @@
         let i = 1;
         let digit;
         do {
-          if (i >= c.buf.length) return; // length bytes not all here yet
+          if (i >= c.buf.length) return; 
           digit = c.buf[i++];
           length += (digit & 127) * multiplier;
           multiplier *= 128;
           if (multiplier > 128 * 128 * 128 * 128) return drop(c);
         } while (digit & 128);
         if (length > 65536) return drop(c);
-        if (c.buf.length < i + length) return; // rest of packet not here yet
+        if (c.buf.length < i + length) return; 
 
         const header = c.buf[0];
         const body = c.buf.slice(i, i + length);
@@ -331,15 +296,12 @@
     function handle(c, header, body) {
       const type = header >> 4;
       if (type === 2) {
-        // CONNACK: second byte 0 means accepted
         if (body[1] === 0) write(c, subscribePacket(subTopic));
         else drop(c);
       } else if (type === 9) {
-        // SUBACK: 0x80 means the broker refused the subscription
         if (body.length >= 3 && body[2] !== 0x80) markReady(c);
         else drop(c);
       } else if (type === 3) {
-        // PUBLISH
         const qos = (header >> 1) & 3;
         if (body.length < 2) return;
         const topicLength = (body[0] << 8) | body[1];
@@ -353,7 +315,6 @@
         }
         if (topic === subTopic) receive(body.slice(offset));
       }
-      // PINGRESP (13) needs nothing: lastRx already updated
     }
 
     function remember(id) {
@@ -363,7 +324,7 @@
         for (const entry of seen) {
           if (entry[1] < cutoff) seen.delete(entry[0]);
         }
-        // still too many (burst): drop the oldest ones
+
         while (seen.size > 400) seen.delete(seen.keys().next().value);
       }
     }
@@ -374,7 +335,7 @@
       try {
         envelope = await open(base, recvDir, payload);
       } catch (e) {
-        return; // wrong key, tampered, or not ours
+        return; 
       }
       if (!envelope || typeof envelope.i !== "string" || typeof envelope.t !== "number") return;
       if (Math.abs(Date.now() - envelope.t) > MAX_AGE_MS) return;
@@ -386,7 +347,6 @@
       try {
         if (options.onMessage) options.onMessage(msg);
       } catch (e) {
-        // a bug in the caller must not break the connection
       }
     }
 
