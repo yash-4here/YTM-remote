@@ -369,8 +369,7 @@
       }
     }
 
-    // Wake-up call (phone woke from sleep, alarm fired): retry broken brokers
-    // right away and check the working ones are really still there
+
     function nudge() {
       if (closed) return;
       for (const c of conns) {
@@ -405,7 +404,6 @@
             if (ws.readyState === 1) ws.send(DISCONNECT);
             ws.close();
           } catch (e) {
-            // already closed
           }
         }
       }
