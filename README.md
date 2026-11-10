@@ -30,7 +30,7 @@ If the scan doesn't work, open the phone page above and type the 12-character co
 ## Privacy
 
 - No account, no sign-in, no analytics, and nothing is sent to me.
-- What travels (encrypted): the current song title, artist, position, volume, the queue, and your commands.
+- What travels (encrypted): the current song title, artist, position, volume, the queue, search list, and your commands.
 - Your pairing code and settings are stored only in your own browser storage.
 - Anyone with your pairing code can control your player. Use **New code** in the popup if you shared it by mistake.
 - The extension only runs on `music.youtube.com`.
