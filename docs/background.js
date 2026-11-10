@@ -1,27 +1,12 @@
-// background.js
-// The laptop side of the connection. Runs as the extension's service worker.
-//
-//   phone  <-- encrypted, via public brokers -->  this file  <-- tabs.sendMessage -->  content.js
-//
-// - Keeps the pairing code (made once, stored in chrome.storage.local).
-// - Holds the connection to the brokers (carrier.js).
-// - Passes the phone's commands to the YT Music tab, but only the fixed list
-//   below, and sends the player state back.
-//
-// Chrome 116+ keeps an extension worker alive while it has an open WebSocket
-// that sends or receives something at least every 30 seconds. carrier.js pings
-// every 15 seconds for exactly that. The alarm below is the safety net: if the
-// worker was shut down anyway, it wakes up and reconnects.
-
 importScripts("carrier.js");
 
 const COMMANDS = ["play", "pause", "toggle", "next", "previous", "volumeUp", "volumeDown"];
 const YT_MUSIC = "https://music.youtube.com/*";
 const ALARM = "ytmr-tick";
-const HEARTBEAT_MS = 15000; // the phone treats the laptop as gone after ~40s of silence
-const POLL_MS = 2000; // how often we look for song changes to push to the phone
+const HEARTBEAT_MS = 15000; 
+const POLL_MS = 2000; 
 const MAX_COMMANDS_PER_3S = 10;
-const MAX_VOLUME_PER_3S = 30; // a slider sends many small updates
+const MAX_VOLUME_PER_3S = 30; 
 let recentVolume = [];
 let volumeTimer = null;
 
@@ -31,13 +16,13 @@ let lastQuery = "";
 
 let code = null;
 let link = null;
-let generation = 0; // bumps whenever the link is rebuilt, so late results can be ignored
+let generation = 0; 
 let lastSent = "";
 let lastQueue = "";
 let polling = false;
 let recentCommands = [];
 
-// ---------- Finding the player ----------
+//Finding the player
 
 async function findTab() {
   const tabs = await chrome.tabs.query({ url: YT_MUSIC });
@@ -45,7 +30,7 @@ async function findTab() {
   return tabs.find((t) => t.audible) || tabs.find((t) => t.active) || tabs[0];
 }
 
-// Only these fields leave the laptop, and only as plain values
+
 function forPhone(state) {
   const s = state && typeof state === "object" ? state : {};
   const artwork = typeof s.artwork === "string" && /^https:\/\//.test(s.artwork) && s.artwork.length <= 500 ? s.artwork : "";
@@ -61,8 +46,7 @@ function forPhone(state) {
   };
 }
 
-// The queue is sent as compact rows [title, artist, duration] around the current song,
-// trimmed so the encrypted message always fits under carrier.js's size limit.
+
 const MAX_QUEUE_SEND = 150;
 const MAX_QUEUE_BYTES = 24000;
 const bytesOf = (value) => new TextEncoder().encode(JSON.stringify(value)).length;
@@ -70,7 +54,7 @@ const bytesOf = (value) => new TextEncoder().encode(JSON.stringify(value)).lengt
 function forPhoneQueue(q) {
   const list = q && Array.isArray(q.items) ? q.items : [];
   const cur = q && Number.isInteger(q.cur) ? q.cur : -1;
-  const from = cur > 10 ? cur - 10 : 0; // a few songs before the current one
+  const from = cur > 10 ? cur - 10 : 0; 
   const items = list.slice(from, from + MAX_QUEUE_SEND).map((it) => [
     String((it && it.title) || "").slice(0, 60),
     String((it && it.artist) || "").slice(0, 40),
@@ -87,7 +71,6 @@ async function readQueue() {
     const res = await chrome.tabs.sendMessage(tab.id, { type: "GET_QUEUE" });
     if (res && res.ok && res.queue) return forPhoneQueue(res.queue);
   } catch (err) {
-    // content script isn't there; the phone keeps its last queue
   }
   return null;
 }
@@ -99,18 +82,12 @@ async function readState() {
     const res = await chrome.tabs.sendMessage(tab.id, { type: "GET_STATE" });
     if (res && res.ok && res.state) return forPhone(res.state);
   } catch (err) {
-    // content script isn't there
+
   }
-  // A YT Music tab exists but the extension isn't attached to it yet
-  // (typical right after installing or reloading the extension)
   return { tab: false, refresh: true };
 }
 
-// ---------- Talking to the phone ----------
-
-// The song position changes every second, so it is left out of the "did anything change?"
-// check. The phone moves its own bar along; we only resend when the position jumps
-// (a seek on the laptop) or on the regular heartbeat.
+//Talking to the phone
 let posSent = 0;
 let posSentAt = 0;
 
@@ -162,13 +139,11 @@ async function runCommand(command, extra) {
   }
 
   if (command === "volume") {
-    // A slider sends many updates: apply each one, but tell the phone just once afterwards
     const volTab = await findTab();
     if (volTab) {
       try {
         await chrome.tabs.sendMessage(volTab.id, { type: "COMMAND", command: "volume", level: extra.level });
       } catch (err) {
-        // content script isn't there
       }
     }
     clearTimeout(volumeTimer);
@@ -193,7 +168,6 @@ async function runCommand(command, extra) {
   posSentAt = Date.now();
   current.send({ type: "state", state: state });
   if (command === "jump") {
-    // YT Music takes a moment to switch songs; then tell the phone the new queue position
     setTimeout(() => {
       publishState(false);
       publishQueue(false);
@@ -201,9 +175,7 @@ async function runCommand(command, extra) {
   }
 }
 
-// ---------- Search ----------
-
-// Asks the YT Music tab to search, then sends the phone the list of results
+//Search
 async function runSearch(q) {
   const current = link;
   if (!current) return;
@@ -232,13 +204,13 @@ async function runSearch(q) {
         reply.err = res && typeof res.err === "string" ? res.err.slice(0, 12) : "nosearch";
       }
     } catch (err) {
-      reply.err = "refresh"; // the tab doesn't have the extension attached yet
+      reply.err = "refresh"; 
     }
   }
   current.send(reply);
 }
 
-// Plays one of the results from the last search
+
 async function runPlayResult(extra) {
   const current = link;
   if (!current) return;
@@ -250,16 +222,13 @@ async function runPlayResult(extra) {
       const res = await chrome.tabs.sendMessage(tab.id, { type: "PLAY_RESULT", index: extra.index, title: extra.title });
       ok = !!(res && res.ok);
     } catch (err) {
-      // content script isn't there
     }
   }
 
   if (!ok) {
-    // What's on the laptop no longer matches what the phone showed
     current.send({ type: "results", q: lastQuery, err: "changed", items: [] });
     return;
   }
-  // YT Music takes a moment to start the song; then tell the phone
   setTimeout(() => {
     publishState(true);
     publishQueue(false);
@@ -276,7 +245,7 @@ function onPhoneMessage(msg) {
   if (msg.type === "cmd") {
     if (typeof msg.cmd !== "string") return;
 
-    // Commands with parameters are checked strictly; every other command must be in our list
+
     let extra = {};
     if (msg.cmd === "jump") {
       const valid =
@@ -304,7 +273,7 @@ function onPhoneMessage(msg) {
       return;
     }
 
-    // Rate limits. Volume gets its own, higher limit because a slider sends many updates.
+
     const now = Date.now();
     if (msg.cmd === "volume") {
       recentVolume = recentVolume.filter((t) => now - t < 3000);
@@ -320,7 +289,7 @@ function onPhoneMessage(msg) {
   }
 }
 
-// ---------- Pairing code and connection ----------
+//Pairing code and connection
 
 async function connect(newCode) {
   const mine = ++generation;
@@ -333,14 +302,13 @@ async function connect(newCode) {
   lastQueue = "";
 
   const base = await Carrier.topicBase(newCode);
-  if (mine !== generation) return; // a newer code replaced this one while we were working
+  if (mine !== generation) return; 
 
   link = Carrier.createLink({
     role: "laptop",
     base: base,
     onMessage: onPhoneMessage,
     onStatus: function () {},
-    // As soon as we're online, tell the phone what's playing
     onConnect: function () {
       publishState(true);
       publishQueue(true);
@@ -356,7 +324,6 @@ async function start() {
     await chrome.storage.local.set({ code: saved });
   }
 
-  // Wake the worker up regularly in case Chrome shut it down
   const alarm = await chrome.alarms.get(ALARM);
   if (!alarm) chrome.alarms.create(ALARM, { periodInMinutes: 0.5 });
 
@@ -372,10 +339,9 @@ const ready = start().catch(function (err) {
   console.error("YT Music Remote could not start:", err);
 });
 
-// ---------- Listeners (must be registered right away, not after an await) ----------
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  // Only the extension's own pages (the popup). Never content scripts or web pages.
+
   if (sender.id !== chrome.runtime.id || sender.tab) return;
   if (!msg || typeof msg.type !== "string") return;
 
@@ -404,23 +370,20 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   });
 });
 
-// Having these listeners makes Chrome start the worker when the browser opens
+
 chrome.runtime.onStartup.addListener(() => {});
-// Chrome only attaches the extension to YT Music tabs opened AFTER it was installed or updated.
-// So at install/update time we attach to the ones that are already open, and nobody has to refresh.
+
 async function attachToOpenTabs() {
   const tabs = await chrome.tabs.query({ url: YT_MUSIC });
   for (const tab of tabs) {
     try {
       await chrome.tabs.sendMessage(tab.id, { type: "GET_STATE" });
-      continue; // already attached
+      continue; 
     } catch (err) {
-      // not attached yet
     }
     try {
       await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["adapter.js", "content.js"] });
     } catch (err) {
-      // the tab can't be reached (for example it is still loading); a refresh will fix it
     }
   }
 }
@@ -429,10 +392,10 @@ chrome.runtime.onInstalled.addListener(() => {
   attachToOpenTabs();
 });
 
-// Heartbeat: tells the phone the laptop is alive, even when nothing changes
+
 setInterval(() => publishState(true), HEARTBEAT_MS);
 
-// Pushes song changes (including ones you make on the laptop) to the phone
+
 setInterval(async () => {
   if (polling) return;
   polling = true;
