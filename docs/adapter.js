@@ -1,7 +1,3 @@
-// adapter.js
-// The ONLY file that knows how the YouTube Music page is built.
-// If YT Music changes its layout and something stops working, fix it here.
-
 (function () {
   const SEL = {
     video: "video",
@@ -48,9 +44,7 @@
     if (video) video.volume = v / 100;
   }
 
-  // ---- Queue ----
-  // YT Music keeps the queue in the page as <ytmusic-player-queue-item> rows.
-  // Rows inside #counterpart-renderer are the hidden video/audio twin: skipped.
+  //Queue
   const QUEUE_ITEM = "ytmusic-player-queue-item";
   const MAX_QUEUE_ITEMS = 500;
 
@@ -74,15 +68,13 @@
     }));
     let cur = els.findIndex((el) => el.hasAttribute("selected"));
     if (cur === -1) {
-      // Fall back to matching the song shown in the player bar
       const now = getState().title;
       cur = now ? items.findIndex((it) => it.title === now) : -1;
     }
     return { cur: cur, items: items };
   }
 
-  // Plays the row at `index`, but only if it still has the title the phone saw
-  // (the queue may have changed since the phone drew it).
+  
   function jumpTo(index, title) {
     const el = queueItems()[index];
     if (!el) return false;
@@ -98,9 +90,7 @@
     video.currentTime = Math.max(0, Math.min(seconds, video.duration - 0.5));
   }
 
-  // ---- Search ----
-  // Uses YT Music's own search box, so the tab never reloads and the music keeps playing.
-  // Everything that depends on how the search page is built is in this block.
+  //Search
   const SEARCH_INPUT = "ytmusic-search-box input";
   const SEARCH_ROWS = "ytmusic-search-page ytmusic-responsive-list-item-renderer";
   const SEARCH_TOP = "ytmusic-search-page ytmusic-card-shelf-renderer";
@@ -110,7 +100,7 @@
   const squash = (text) => (text || "").replace(/\s+/g, " ").trim();
   const textIn = (el, selector) => squash((el.querySelector(selector) || {}).textContent);
 
-  // The results currently on the page: [{ title, details, el }]
+  
   function readResults() {
     const out = [];
     const seen = new Set();
@@ -131,7 +121,7 @@
 
   const signature = (rows) => rows.map((r) => r.title + "|" + r.details).join("\n");
 
-  // Types the text into the search box and presses Enter
+
   function submitSearch(input, text) {
     const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value").set;
     input.focus();
@@ -143,7 +133,7 @@
     input.dispatchEvent(new KeyboardEvent("keyup", key));
   }
 
-  // Resolves to { ok: true, results: [{title, details}] } or { ok: false, err }
+
   async function search(q) {
     const input = $(SEARCH_INPUT);
     if (!input) return { ok: false, err: "nosearch" };
@@ -153,8 +143,7 @@
     const previousQ = wasOnSearch ? new URLSearchParams(location.search).get("q") : null;
     submitSearch(input, q);
 
-    // The old results stay on the page for a moment after the address changes, so a list only
-    // counts as the answer once it differs from what was there before (or it's the same search again)
+
     const done = (results) => ({ ok: true, results: results.map((r) => ({ title: r.title, details: r.details })) });
     let onResultsPage = false;
     const end = Date.now() + 8000;
@@ -165,17 +154,16 @@
       const rows = readResults();
       const changed = signature(rows) !== before;
       if (rows.length && ((onResultsPage && (changed || previousQ === q)) || (!onResultsPage && changed))) {
-        await sleep(500); // let the rest of the list finish loading
+        await sleep(500); 
         return done(readResults());
       }
     }
     const rows = readResults();
-    if (onResultsPage && rows.length) return done(rows); // a different search that happens to list the same songs
+    if (onResultsPage && rows.length) return done(rows); 
     return { ok: false, err: onResultsPage ? "empty" : "timeout" };
   }
 
-  // Plays result number `index`, but only if it still has the title the phone saw
-  // (the page may have moved on since).
+
   function playResult(index, title) {
     const hit = readResults()[index];
     if (!hit) return false;
@@ -194,7 +182,6 @@
 
     let artist = (meta && meta.artist) || "";
     if (!artist) {
-      // The byline looks like "Artist • Album • Year"
       artist = textOf(SEL.byline).split("•")[0].trim();
     }
 
